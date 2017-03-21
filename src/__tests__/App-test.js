@@ -1,106 +1,110 @@
-import expect from 'expect'
+import React from 'react'
+import {render} from 'react-dom'
+import {Provider} from 'mobx-react'
+import { shallow, mount } from 'enzyme'
+import { getSpecWrapper } from '../utils/unit'
+import 'jest-enzyme';
+
 import game from '../store'
+import App, { GameBoard } from '../App'
 
-const isWinnerForEveryWinningCombo = (playerToTest) => {
-  return game.winningCombos.reduce((status, combo) => {
-
-    // bail if we already failed
-    if (!status) return status
-
-    // setup new game scenario
-    game.cells = ['', '', '', '', '', '', '', '', '']
-    game.currentPlayer = playerToTest
-
-    // take 2 of 3 winning combo moves
-    game.cells[combo[0]] = playerToTest
-    game.cells[combo[1]] = playerToTest
-
-    // take the third winning combo moves
-    game.handleMove(combo[2])
-
-    // expect a win
-    const result = game.winner === playerToTest
-    return result
-  }, true)
+const clickSequence = (wrapper, sequence) => {
+  sequence.forEach(square =>
+    getSpecWrapper(wrapper, 'box').at(square).simulate('click')
+  )
 }
 
-describe('game store', () => {
-  describe('with no action', () => {
-    it('should contain initial state', () => {
-      const actual = {
-        PLAYER1_SYMBOL: game.PLAYER1_SYMBOL,
-        PLAYER2_SYMBOL: game.PLAYER2_SYMBOL,
-        winningCombos: game.winningCombos,
-        currentPlayer: game.currentPlayer,
-        cells: game.cells.toJS()
-      }
-      const expected = {
-        PLAYER1_SYMBOL: 'X',
-        PLAYER2_SYMBOL: 'O',
-        winningCombos: [ [0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6] ],
-        currentPlayer: 'X',
-        cells: ['', '', '', '', '', '', '', '', ''],
-      }
-      expect(actual).toEqual(expected)
+describe('tic-tac-toe', () => {
+  describe('render', () => {
+    it('should render at target divq', () => {
+      render(
+        <Provider game={game} >
+          <App />
+        </Provider>, 
+        document.createElement('div')
+      )
     })
   })
 
-  describe('#resetGame', () => {
-    it('should restore initial state', () => {
-      game.currentPlayer = 'O'
-      game.cells[1] = 'X'
+  describe('the first move', () => {
+    it('should render X', () => {
       game.resetGame()
-      const actual = {
-        currentPlayer: game.currentPlayer,
-        cells: game.cells.toJS()
-      }
-      const expected = {
-        currentPlayer: 'X',
-        cells: ['', '', '', '', '', '', '', '', ''],
-      }
-      expect(actual).toEqual(expected)
+      const wrapper = mount(<Provider game={game} ><App /></Provider>)
+      clickSequence(wrapper, [0])
+      const actual = getSpecWrapper(wrapper, 'game-board').text()
+      const expected = 'X'
+      expect(actual).toBe(expected)
     })
   })
 
-  describe('#handleMove', () => {
-    it('should mark cell and switch player', () => {
-      game.handleMove(0)
-      const actual = {
-        currentPlayer: game.currentPlayer,
-        cells: game.cells.toJS()
-      }
-      const expected = {
-        currentPlayer: 'O',
-        cells: ['X', '', '', '', '', '', '', '', ''],
-      }
-      expect(actual).toEqual(expected)
-    })
-
-    it('should win on every winning combo for player X', () => {
-      const actual = isWinnerForEveryWinningCombo('X')
-      const expected = true
-      expect(actual).toEqual(expected)
-    })
-
-    it('should win on every winning combo for player O', () => {
-      const actual = isWinnerForEveryWinningCombo('O')
-      const expected = true
-      expect(actual).toEqual(expected)
-    })
-
-    it('should not write over the other players move', () => {
-      game.currentPlayer = 'O'
-      game.cells = ['X', '', '', '', '', '', '', '', '']
-      game.handleMove(0)
-      const actual = {
-        currentPlayer: game.currentPlayer,
-        cells: game.cells.toJS()
-      }
-      const expected = {
-        currentPlayer: 'O',
-        cells: ['X', '', '', '', '', '', '', '', ''],
-      }
-      expect(actual).toEqual(expected)
+  describe('multiple moves', () => {
+    it('should alternate between player X and O', () => {
+      game.resetGame()
+      const wrapper = mount(<Provider game={game} ><App /></Provider>)
+      clickSequence(wrapper, [0,1,2,3])
+      const actual = getSpecWrapper(wrapper, 'game-board').text()
+      const expected = 'XOXO'
+      expect(actual).toBe(expected)
     })
   })
+
+  describe('winning the game', () => {
+    it('should be possible for player X', () => {
+      game.resetGame()
+      const wrapper = mount(<Provider game={game} ><App /></Provider>)
+      clickSequence(wrapper, [0,3,1,4,2])
+      const actual = getSpecWrapper(wrapper, 'winner').text()
+      const expected = 'Player X wins!!'
+      expect(actual).toBe(expected)
+    })
+
+    it('should be possible for player O', () => {
+      game.resetGame()
+      const wrapper = mount(<Provider game={game} ><App /></Provider>)
+      clickSequence(wrapper, [0,3,1,4,8,5])
+      const actual = getSpecWrapper(wrapper, 'winner').text()
+      const expected = 'Player O wins!!'
+      expect(actual).toBe(expected)
+    })
+  })
+
+  describe('game reset', () => {
+    it('should clear board and winner', () => {
+      game.resetGame()
+      const wrapper = mount(<Provider game={game} ><App /></Provider>)
+      clickSequence(wrapper, [0,3,1,4,2])
+      const hasWinnerBeingPlayerX = getSpecWrapper(wrapper, 'winner').text() === 'Player X wins!!'
+      expect(hasWinnerBeingPlayerX).toBe(true)
+
+      getSpecWrapper(wrapper, 'reset-game').simulate('click')
+
+      const noWinner = getSpecWrapper(wrapper, 'winner').text() === ''
+      const noMoves = getSpecWrapper(wrapper, 'game-board').text() === ''
+      expect(noWinner).toBe(true)
+      expect(noMoves).toBe(true)
+    })
+  })
+
+  // describe('testing issues ', () => {
+  //   xit('should work ;)', () => {
+  //     //
+  //     // trying to deal with HOC wrappers
+  //     //
+  //     const wrapper = mount(<Provider game={game} ><App /></Provider>)
+
+  //     // ROUND1
+  //     // use enzyme find method
+  //     // FAIL: does not provide component props
+  //     const app = wrapper.find(App)
+  //     console.log('props', app.props());
+  //     console.log('children.length', app.children().length);
+      
+  //     // ROUND2 
+  //     // use getSpecWrapper (Eventbrite React Testing util)
+  //     // success finds data-spec='app'
+  //     let myApp = getSpecWrapper(wrapper, 'app')
+  //     console.log('props', myApp.props());
+  //     console.log('children.length', myApp.children().length);
+  //   })
+  // })
 })
