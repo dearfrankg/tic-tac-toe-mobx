@@ -1,11 +1,13 @@
 {
   "name": "tic-tac-toe-mobx",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Describe tic-tac-toe-mobx here",
   "private": true,
   "jest": {
     "verbose": true,
-    "modulePathIgnorePatterns": ["/src/"],
+    "modulePathIgnorePatterns": [
+      "/src/"
+    ],
     "transform": {
       "^.+\\.js$": "<rootDir>/jest.transform.js"
     }
