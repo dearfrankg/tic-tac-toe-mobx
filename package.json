@@ -4,6 +4,9 @@
   "description": "Describe tic-tac-toe-mobx here",
   "private": true,
   "jest": {
+    "coveragePathIgnorePatterns": [
+      "./src/utils/unit.js"
+    ],
     "transform": {
       "^.+\\.js$": "<rootDir>/jest.transform.js"
     }
