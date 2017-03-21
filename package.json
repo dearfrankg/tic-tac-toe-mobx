@@ -4,10 +4,6 @@
   "description": "Describe tic-tac-toe-mobx here",
   "private": true,
   "jest": {
-    "verbose": true,
-    "modulePathIgnorePatterns": [
-      "/src/"
-    ],
     "transform": {
       "^.+\\.js$": "<rootDir>/jest.transform.js"
     }
